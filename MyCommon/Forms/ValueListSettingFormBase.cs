@@ -13,16 +13,16 @@ using System.Windows.Forms;
 namespace MyCommon
 {
     /// <summary>
-    /// 設定機能画面基底クラス
+    /// 設定値リスト画面基底クラス
     /// </summary>
-    public abstract partial class SettingFormBase : Form
+    public partial class ValueListSettingFormBase : Form
     {
         private readonly string NEW_SETTING_NAME = "新規作成";
 
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public SettingFormBase()
+        public ValueListSettingFormBase()
         {
             InitializeComponent();
 
@@ -35,7 +35,7 @@ namespace MyCommon
         /// <summary>
         /// 現在編集している設定リストを取得します
         /// </summary>
-        protected List<Settings> ActiveSettings { get; set; }
+        protected List<ValueListSettings> ActiveSettings { get; set; }
 
         /// <summary>
         /// 変更されたかどうかを取得または設定します
@@ -65,10 +65,10 @@ namespace MyCommon
         private void cmbProfile_SelectedIndexChanged(object sender, EventArgs e)
         {
             this.lbSettings.Items.Clear();
-            Settings findSetting = this.ActiveSettings.Find(match => match.Name.Equals(this.cmbProfile.SelectedItem));
+            ValueListSettings findSetting = this.ActiveSettings.Find(match => match.Name.Equals(this.cmbProfile.SelectedItem));
             if (null == findSetting)
             {
-                findSetting = new Settings(this.NEW_SETTING_NAME, false);
+                findSetting = new ValueListSettings(this.NEW_SETTING_NAME, false);
                 this.ActiveSettings.Add(findSetting);
             }
             findSetting.Values.ForEach(value => this.lbSettings.Items.Add(value));
@@ -83,7 +83,7 @@ namespace MyCommon
         {
             //選択済み設定変更
             this.ActiveSettings.ForEach(setting => setting.IsSelected = false);
-            Settings findSetting = this.ActiveSettings.Find(match => match.Name.Equals(this.cmbProfile.SelectedItem));
+            ValueListSettings findSetting = this.ActiveSettings.Find(match => match.Name.Equals(this.cmbProfile.SelectedItem));
             findSetting.IsSelected = true;
 
             //新規登録の名前設定
@@ -204,7 +204,7 @@ namespace MyCommon
                 return;
             }
 
-            Settings findSettings = this.ActiveSettings.Find(match => match.Name.Equals(this.cmbProfile.SelectedItem));
+            ValueListSettings findSettings = this.ActiveSettings.Find(match => match.Name.Equals(this.cmbProfile.SelectedItem));
             this.ActiveSettings.Remove(findSettings);
             this.cmbProfile.Items.Remove(findSettings.Name);
             this.cmbProfile.SelectedItem = this.NEW_SETTING_NAME;
@@ -235,7 +235,9 @@ namespace MyCommon
         /// }
         /// </code>
         /// </example>
-        protected abstract void LoadSettings();
+        protected virtual void LoadSettings()
+        {
+        }
 
         /// <summary>
         /// 設定値編集を開始します
@@ -250,7 +252,7 @@ namespace MyCommon
 
             //設定読込
             this.ActiveSettings.ForEach(setting => this.cmbProfile.Items.Add(setting.Name));
-            Settings findSettings = this.ActiveSettings.Find(match => match.IsSelected);
+            ValueListSettings findSettings = this.ActiveSettings.Find(match => match.IsSelected);
             this.cmbProfile.SelectedItem = findSettings != null ? findSettings.Name : this.NEW_SETTING_NAME;
 
             //モーダル表示
@@ -262,43 +264,28 @@ namespace MyCommon
         /// </summary>
         /// <param name="settingName">設定名</param>
         /// <returns>読み出した設定リスト</returns>
-        protected List<Settings> LoadSettingFromFile(String settingName)
+        protected List<ValueListSettings> LoadSettingFromFile(String settingName)
         {
             String fileName = Path.GetDirectoryName(Application.ExecutablePath) + "\\" + settingName + ".xml";
             if (!File.Exists(fileName))
             {
-                return new List<Settings>();
+                return new List<ValueListSettings>();
             }
 
-            //XmlSerializerオブジェクトを作成
-            System.Xml.Serialization.XmlSerializer serializer = new System.Xml.Serialization.XmlSerializer(typeof(List<Settings>));
-            //読み込むファイルを開く
-            System.IO.StreamReader sr = new System.IO.StreamReader(fileName, new System.Text.UTF8Encoding(false));
-            //XMLファイルから読み込み、逆シリアル化する
-            List<Settings> settings = (List<Settings>)serializer.Deserialize(sr);
-            //ファイルを閉じる
-            sr.Close();
-
-            return settings;
+            var reader = new XmlSerializeHelper<List<ValueListSettings>>();
+            return reader.LoadFromFile(fileName);
         }
 
         /// <summary>
         /// 設定をファイルへ書き込みます
         /// </summary>
         /// <param name="setting">書き込み設定リスト</param>
-        private void WriteSettingsToFile(List<Settings> setting)
+        private void WriteSettingsToFile(List<ValueListSettings> setting)
         {
             String fileName = Path.GetDirectoryName(Application.ExecutablePath) + "\\" + this.Text + ".xml";
 
-            //XmlSerializerオブジェクトを作成
-            //オブジェクトの型を指定する
-            System.Xml.Serialization.XmlSerializer serializer = new System.Xml.Serialization.XmlSerializer(typeof(List<Settings>));
-            //書き込むファイルを開く（UTF-8 BOM無し）
-            System.IO.StreamWriter sw = new System.IO.StreamWriter(fileName, false, new System.Text.UTF8Encoding(false));
-            //シリアル化し、XMLファイルに保存する
-            serializer.Serialize(sw, setting);
-            //ファイルを閉じる
-            sw.Close();
+            var writer = new XmlSerializeHelper<List<ValueListSettings>>();
+            writer.WriteToFile(fileName, setting);
         }
 
         /// <summary>
@@ -323,16 +310,16 @@ namespace MyCommon
             }
 
             //新規作成がだぶついていれば消す
-            this.ActiveSettings.Remove(new Settings(this.NEW_SETTING_NAME, false));
+            this.ActiveSettings.Remove(new ValueListSettings(this.NEW_SETTING_NAME, false));
         }
 
         #endregion
     }
 
     /// <summary>
-    /// 設定クラス
+    /// 設定値リストクラス
     /// </summary>
-    public class Settings
+    public class ValueListSettings
     {
         /// <summary>
         /// 選択済みフラグを取得または設定します
@@ -352,7 +339,7 @@ namespace MyCommon
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        private Settings()
+        private ValueListSettings()
         {
         }
 
@@ -361,7 +348,7 @@ namespace MyCommon
         /// </summary>
         /// <param name="name">設定名</param>
         /// <param name="isSelected">選択済みか否か</param>
-        public Settings(String name, bool isSelected)
+        public ValueListSettings(String name, bool isSelected)
         {
             this.IsSelected = isSelected;
             this.Name = name;

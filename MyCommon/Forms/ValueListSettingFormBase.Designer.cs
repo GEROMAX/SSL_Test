@@ -1,6 +1,6 @@
 ﻿namespace MyCommon
 {
-    partial class SettingFormBase
+    partial class ValueListSettingFormBase
     {
         /// <summary>
         /// Required designer variable.

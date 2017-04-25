@@ -11,11 +11,11 @@ using System.Windows.Forms;
 
 namespace SSL_Test
 {
-    public partial class URLSettingForm : SettingFormBase
+    public partial class URLSettingForm : ValueListSettingFormBase
     {
-        private List<Settings> URLs { get; set; }
+        private List<ValueListSettings> URLs { get; set; }
 
-        public Settings SelectedURLSetting
+        public ValueListSettings SelectedURLSetting
         {
             get
             {
